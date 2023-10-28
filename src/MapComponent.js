@@ -20,7 +20,6 @@ function MapComponent() {
     const addMarker = (position) => {
         const newMarkers = [...markers, position];
         setMarkers(newMarkers);
-
     }
 
     // Function to clear all markers and polyline
@@ -60,14 +59,14 @@ function MapComponent() {
             />
             <MapEvents addMarker={addMarker} clearMarkers={clearMarkers} drawLine={drawLine} />
             {markers.map((position, idx) => 
-                <CircleMarker center={position} radius={10} key={idx} eventHandlers={{ contextmenu: () => { removeMarker(position) } }} />
+                <CircleMarker center={position} radius={10} key={idx} eventHandlers={{ contextmenu: () => { removeMarker(position, idx) } }} />
             )}
             <Polyline positions={polyline} color="blue" />
         </MapContainer>
     )
 }
 
-function MapEvents({ addMarker, clearMarkers, drawLine}) {
+function MapEvents({ addMarker, clearMarkers, drawLine }) {
     useMapEvents({
         mousemove: (e) => {
             window.currentMousePos = e.latlng;
@@ -84,4 +83,5 @@ function MapEvents({ addMarker, clearMarkers, drawLine}) {
     });
     return null;
 }
-export default MapComponent 
+
+export default MapComponent;
