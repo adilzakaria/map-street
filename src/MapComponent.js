@@ -20,6 +20,7 @@ function MapComponent() {
     const addMarker = (position) => {
         const newMarkers = [...markers, position];
         setMarkers(newMarkers);
+
     }
 
     // Function to clear all markers and polyline
@@ -29,15 +30,19 @@ function MapComponent() {
         setSelectedMarker(null);
     }
 
-    // Function to remove a marker
-    const removeMarker = (markerToRemove, index) => {
-        const newMarkers = markers.filter((marker, idx) => idx !== index);
+     // Function to remove a marker
+     const removeMarker = (markerToRemove) => {
+        const newMarkers = markers.filter(marker => marker !== markerToRemove);
         setMarkers(newMarkers);
+    }
 
-        // Update the polyline coordinates
-        const newPolyline = [...polyline];
-        newPolyline.splice(index, 1);
-        setPolyline(newPolyline);
+     // Function to remove a line
+     const removeLine = () => {
+        if (polyline.length > 0) {
+            const newPolyline = [...polyline];
+            newPolyline.pop(); // Menghapus garis terakhir
+            setPolyline(newPolyline);
+        }
     }
 
     // Function to draw a line manually
@@ -57,16 +62,16 @@ function MapComponent() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             />
-            <MapEvents addMarker={addMarker} clearMarkers={clearMarkers} drawLine={drawLine} />
+            <MapEvents addMarker={addMarker} clearMarkers={clearMarkers} drawLine={drawLine} removeLine={removeLine}/>
             {markers.map((position, idx) => 
-                <CircleMarker center={position} radius={10} key={idx} eventHandlers={{ contextmenu: () => { removeMarker(position, idx) } }} />
+                <CircleMarker center={position} radius={10} key={idx} eventHandlers={{ contextmenu: () => { removeMarker(position) } }} />
             )}
             <Polyline positions={polyline} color="blue" />
         </MapContainer>
     )
 }
 
-function MapEvents({ addMarker, clearMarkers, drawLine }) {
+function MapEvents({ addMarker, clearMarkers, drawLine, removeLine}) {
     useMapEvents({
         mousemove: (e) => {
             window.currentMousePos = e.latlng;
@@ -78,10 +83,11 @@ function MapEvents({ addMarker, clearMarkers, drawLine }) {
                 clearMarkers();
             }  else if (e.originalEvent.key === 'l') {
                 drawLine(window.currentMousePos);
+            } else if (e.originalEvent.key === 'r') {
+                removeLine();
             }
         }
     });
     return null;
 }
-
-export default MapComponent;
+export default MapComponent 
