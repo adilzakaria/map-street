@@ -90,4 +90,5 @@ function MapEvents({ addMarker, clearMarkers, drawLine, removeLine}) {
     });
     return null;
 }
+
 export default MapComponent
