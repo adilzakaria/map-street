@@ -1,5 +1,6 @@
-import { MapContainer, TileLayer, CircleMarker, useMapEvents, Polyline} from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
+import { MapContainer, TileLayer, CircleMarker, useMapEvents, Popup, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet-arrowheads';
 import { useState } from 'react';
 
 function MapComponent() {
@@ -10,49 +11,38 @@ function MapComponent() {
     // State to hold the markers
     const [markers, setMarkers] = useState([]);
 
-    // State to hold polyline coordinates
-    const [polyline, setPolyline] = useState([]);
+    // State to hold the lines
+    const [lines, setLines] = useState([]);
 
-    // State to hold the currently selected marker (for manual drawing)
-    const [selectedMarker, setSelectedMarker] = useState(null);
+    // State to hold the marker to connect
+    const [markerToConnect, setMarkerToConnect] = useState(null);
 
     // Function to add a new marker
     const addMarker = (position) => {
         const newMarkers = [...markers, position];
         setMarkers(newMarkers);
-
     }
 
-    // Function to clear all markers and polyline
-    const clearMarkers = () => {
-        setMarkers([]);
-        setPolyline([]);
-        setSelectedMarker(null);
-    }
-
-     // Function to remove a marker
-     const removeMarker = (markerToRemove) => {
+    // Function to remove a marker
+    const removeMarker = (markerToRemove) => {
         const newMarkers = markers.filter(marker => marker !== markerToRemove);
         setMarkers(newMarkers);
+
+        // Also remove any lines that start or end at the removed marker
+        const newLines = lines.filter(line => !line.includes(markerToRemove));
+        setLines(newLines);
     }
 
-     // Function to remove a line
-     const removeLine = () => {
-        if (polyline.length > 0) {
-            const newPolyline = [...polyline];
-            newPolyline.pop(); // Menghapus garis terakhir
-            setPolyline(newPolyline);
-        }
+    // Function to start connecting markers
+    const startConnecting = (marker) => {
+        setMarkerToConnect(marker);
     }
 
-    // Function to draw a line manually
-    const drawLine = (position) => {
-        if (selectedMarker) {
-            const newPolyline = [...polyline, [selectedMarker, position]];
-            setPolyline(newPolyline);
-            setSelectedMarker(null);
-        } else {
-            setSelectedMarker(position);
+    // Function to finish connecting markers
+    const finishConnecting = (marker) => {
+        if (markerToConnect) {
+            setLines([...lines, [markerToConnect, marker]]);
+            setMarkerToConnect(null);
         }
     }
 
@@ -62,16 +52,31 @@ function MapComponent() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             />
-            <MapEvents addMarker={addMarker} clearMarkers={clearMarkers} drawLine={drawLine} removeLine={removeLine}/>
+            <MapEvents addMarker={addMarker} />
+            {lines.map((line, idx) => <Polyline 
+                positions={line} 
+                key={idx} 
+                arrowheads={{ 
+                    size: '15%', 
+                    frequency: '50%', 
+                    fill: true, 
+                    weight: 0.8, 
+                    color: '#000' 
+                }} 
+            />)}
             {markers.map((position, idx) => 
-                <CircleMarker center={position} radius={10} key={idx} eventHandlers={{ contextmenu: () => { removeMarker(position) } }} />
+                <CircleMarker center={position} radius={10} key={idx} pathOptions={{ color: markerToConnect === position ? 'red' : 'blue' }} eventHandlers={{ click: () => { finishConnecting(position) } }}>
+                    <Popup>
+                        <button onClick={() => removeMarker(position)}>Delete</button>
+                        <button onClick={() => startConnecting(position)}>Connect</button>
+                    </Popup>
+                </CircleMarker>
             )}
-            <Polyline positions={polyline} color="blue" />
         </MapContainer>
     )
 }
 
-function MapEvents({ addMarker, clearMarkers, drawLine, removeLine}) {
+function MapEvents({ addMarker }) {
     useMapEvents({
         mousemove: (e) => {
             window.currentMousePos = e.latlng;
@@ -79,15 +84,11 @@ function MapEvents({ addMarker, clearMarkers, drawLine, removeLine}) {
         keydown: (e) => {
             if (e.originalEvent.key === 'm') {
                 addMarker(window.currentMousePos);
-            } else if (e.originalEvent.key === 'h') {
-                clearMarkers();
-            }  else if (e.originalEvent.key === 'l') {
-                drawLine(window.currentMousePos);
-            } else if (e.originalEvent.key === 'r') {
-                removeLine();
             }
         }
     });
+
     return null;
 }
-export default MapComponent 
+
+export default MapComponent;
