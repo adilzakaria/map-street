@@ -1,7 +1,8 @@
-import { MapContainer, TileLayer, CircleMarker, useMapEvents, Popup, Polyline } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-arrowheads';
-import { useState } from 'react';
+import { MapContainer, TileLayer, CircleMarker, useMapEvents, Popup, useMap } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import { useState, useEffect } from 'react';
+import L from 'leaflet';
+import 'leaflet-polylinedecorator';
 
 function MapComponent() {
     // Set the initial map center to Malang, Indonesia
@@ -53,25 +54,15 @@ function MapComponent() {
                 attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             />
             <MapEvents addMarker={addMarker} />
-            {lines.map((line, idx) => <Polyline 
-                positions={line} 
-                key={idx} 
-                arrowheads={{ 
-                    size: '15%', 
-                    frequency: '50%', 
-                    fill: true, 
-                    weight: 0.8, 
-                    color: '#000' 
-                }} 
-            />)}
             {markers.map((position, idx) => 
-                <CircleMarker center={position} radius={10} key={idx} pathOptions={{ color: markerToConnect === position ? 'red' : 'blue' }} eventHandlers={{ click: () => { finishConnecting(position) } }}>
+                <CircleMarker center={position} radius={5} key={idx} pathOptions={{ color: markerToConnect === position ? 'red' : 'blue' }} eventHandlers={{ click: () => { finishConnecting(position) } }}>
                     <Popup>
                         <button onClick={() => removeMarker(position)}>Delete</button>
                         <button onClick={() => startConnecting(position)}>Connect</button>
                     </Popup>
                 </CircleMarker>
             )}
+            <ArrowDecorator lines={lines} />
         </MapContainer>
     )
 }
@@ -91,4 +82,29 @@ function MapEvents({ addMarker }) {
     return null;
 }
 
-export default MapComponent;
+function ArrowDecorator({ lines }) {
+    const map = useMap();
+
+    useEffect(() => {
+        // Remove all existing polylines and decorators
+        map.eachLayer((layer) => {
+            if (layer instanceof L.Polyline || layer instanceof L.PolylineDecorator) {
+                map.removeLayer(layer);
+            }
+        });
+
+        // Add new polylines and decorators
+        lines.forEach((line) => {
+            const polyline = L.polyline(line, {color: 'blue'}).addTo(map);
+            L.polylineDecorator(polyline, {
+                patterns: [
+                    {offset: '100%', repeat: 0, symbol: L.Symbol.arrowHead({pixelSize: 15, polygon: false, pathOptions: {stroke: true}})}
+                ]
+            }).addTo(map);
+        });
+    }, [lines, map]);
+
+    return null;
+}
+
+export default MapComponent
